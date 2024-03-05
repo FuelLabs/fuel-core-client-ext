@@ -120,7 +120,6 @@ jobs:
   publish-crates:
     # Only do this job if publishing a release
     needs:
-      - verify-tag-version
       - verifications-complete
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: buildjet-4vcpu-ubuntu-2204
