@@ -19,7 +19,6 @@ env:
   RUST_VERSION: 1.74.0
   NIGHTLY_RUST_VERSION: nightly-2023-10-29
   RUSTFLAGS: -D warnings
-  REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
@@ -49,9 +48,6 @@ jobs:
         run: cargo binstall --no-confirm cargo-sort
       - name: Run Cargo.toml sort check
         run: cargo sort -w --check
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   cargo-verifications:
     needs:
@@ -95,11 +91,6 @@ jobs:
           key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: ${{ matrix.command }} ${{ matrix.args }}
         run: cargo ${{ matrix.command }} ${{ matrix.args }}
-      - uses: FuelLabs/.github/.github/actions/slack-notify-template@master
-        if: always() && github.ref == 'refs/heads/master'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
         env:
           RUSTFLAGS: -D warnings
 
@@ -149,17 +140,3 @@ jobs:
           publish-delay: 60000
           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-      - uses: FuelLabs/.github/.github/actions/slack-notify-template@master
-        if: always()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
-  cargo-audit:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
