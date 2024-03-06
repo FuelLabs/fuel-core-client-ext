@@ -13,11 +13,11 @@ build = "build.rs"
 [dependencies]
 async-trait = "0.1"
 cynic = { version = "2.2", features = ["http-reqwest"] }
-fuel-core-client = "0.22.2"
-fuel-core-types = "0.22.2"
+fuel-core-client = "0.22.3"
+fuel-core-types = "0.22.3"
 
 [dev-dependencies]
 tokio = { version = "1.36.0", features = ["full"] }
 
 [build-dependencies]
-fuel-core-client = "0.22.2"
+fuel-core-client = "0.22.3"
