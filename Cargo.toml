@@ -5,6 +5,7 @@ homepage = "https://fuel.network/"
 keywords = ["blockchain", "cryptocurrencies", "fuel-vm", "fuel-core"]
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-core-client-ext"
+description = "Extension trait for fuel-core-client "
 name = "fuel-core-client-ext"
 version = "0.1.0"
 edition = "2021"
