@@ -10,10 +10,12 @@ use fuel_core_client::client::{
             Consensus,
             Header,
         },
+        primitives::TransactionId,
         schema,
-        tx::OpaqueTransaction,
+        tx::transparent_receipt::Receipt,
         BlockId,
         ConnectionArgs,
+        HexString,
         PageInfo,
     },
     FuelClient,
@@ -22,7 +24,7 @@ use fuel_core_types::fuel_crypto::PublicKey;
 
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(
-    schema_path = "./schema.sdl",
+    schema_path = "./target/schema.sdl",
     graphql_type = "Query",
     variables = "ConnectionArgs"
 )]
@@ -32,14 +34,14 @@ pub struct FullBlocksQuery {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "./schema.sdl", graphql_type = "BlockConnection")]
+#[cynic(schema_path = "./target/schema.sdl", graphql_type = "BlockConnection")]
 pub struct FullBlockConnection {
     pub edges: Vec<FullBlockEdge>,
     pub page_info: PageInfo,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "./schema.sdl", graphql_type = "BlockEdge")]
+#[cynic(schema_path = "./target/schema.sdl", graphql_type = "BlockEdge")]
 pub struct FullBlockEdge {
     pub cursor: String,
     pub node: FullBlock,
@@ -47,7 +49,7 @@ pub struct FullBlockEdge {
 
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(
-    schema_path = "./schema.sdl",
+    schema_path = "./target/schema.sdl",
     graphql_type = "Query",
     variables = "BlockByHeightArgs"
 )]
@@ -57,7 +59,7 @@ pub struct FullBlockByHeightQuery {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "./schema.sdl", graphql_type = "Block")]
+#[cynic(schema_path = "./target/schema.sdl", graphql_type = "Block")]
 pub struct FullBlock {
     pub id: BlockId,
     pub header: Header,
@@ -90,6 +92,14 @@ impl From<FullBlockConnection> for PaginatedResult<FullBlock, String> {
             results: conn.edges.into_iter().map(|e| e.node).collect(),
         }
     }
+}
+
+#[derive(cynic::QueryFragment, Clone, Debug)]
+#[cynic(schema_path = "./target/schema.sdl", graphql_type = "Transaction")]
+pub struct OpaqueTransaction {
+    pub id: TransactionId,
+    pub raw_payload: HexString,
+    pub receipts: Option<Vec<Receipt>>,
 }
 
 #[async_trait::async_trait]
