@@ -1,11 +1,8 @@
-use std::{
-    fs,
-    path::Path,
-};
+use std::fs;
 
 fn main() {
-    let path = Path::new(&".").join("schema.sdl");
-    fs::write(path, fuel_core_client::SCHEMA_SDL).unwrap();
+    fs::write("target/schema.sdl", fuel_core_client::SCHEMA_SDL)
+        .expect("Unable to write schema file");
 
     println!("cargo:rerun-if-changed=build.rs");
 }
