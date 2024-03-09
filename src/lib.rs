@@ -336,7 +336,7 @@ mod tests {
                         );
                         stat.message_id.push(message_id);
                         println!(
-                            "Found message out `{message_id}` with amount `{amount}` ~ {}",
+                            "Found {tx_id} message out `{message_id}` with amount `{amount}` ~ {}",
                             amount as f32 / 1e9
                         )
                     }
@@ -427,6 +427,10 @@ mod tests {
                             to,
                             asset_id,
                         } => {
+                            if to == &FAUCET_ADDRESS.parse().unwrap() {
+                                println!("The faucet got {amount} of bad {asset_id} ")
+                            }
+
                             if *amount <= THRESHOLD {
                                 continue;
                             }
@@ -462,5 +466,6 @@ mod tests {
             stat.message_id.len(),
             stat.message_id
         );
+        println!("Checked utxos {}", stat.checked_utxo_id.len());
     }
 }
