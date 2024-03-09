@@ -152,12 +152,16 @@ mod tests {
             UniqueIdentifier,
             UtxoId,
         },
-        fuel_types::AssetId,
+        fuel_types::{
+            AssetId,
+            MessageId,
+        },
     };
     use std::{
         collections::{
             HashMap,
             HashSet,
+            VecDeque,
         },
         sync::Arc,
     };
@@ -178,7 +182,7 @@ mod tests {
     }
 
     // 1 ETH
-    const THRESHOLD: u64 = 1_000_000_000;
+    const THRESHOLD: u64 = 10_000_000;
 
     #[derive(Default)]
     pub struct UtxoStat {
@@ -190,10 +194,11 @@ mod tests {
         chain_config: ChainConfig,
         utxo_ids: HashMap<UtxoId, UtxoStat>,
         txs: HashMap<TxId, Arc<Transaction>>,
-        addresses_to_check: Vec<Address>,
+        addresses_to_check: VecDeque<Address>,
         checked_addresses: HashSet<Address>,
-        utxo_id_to_check: Vec<UtxoId>,
+        utxo_id_to_check: VecDeque<UtxoId>,
         checked_utxo_id: HashMap<UtxoId, u64>,
+        message_id: Vec<MessageId>,
     }
 
     impl Stat {
@@ -211,24 +216,24 @@ mod tests {
 
         pub fn check_address(&mut self, owner: Address) {
             if !self.checked_addresses.contains(&owner) {
-                self.addresses_to_check.push(owner);
+                self.addresses_to_check.push_back(owner);
                 self.checked_addresses.insert(owner);
             }
         }
 
         pub fn next_address(&mut self) -> Option<Address> {
-            self.addresses_to_check.pop()
+            self.addresses_to_check.pop_front()
         }
 
         pub fn check_utxo(&mut self, utxo_id: UtxoId, amount: u64) {
             if !self.checked_utxo_id.contains_key(&utxo_id) {
-                self.utxo_id_to_check.push(utxo_id);
+                self.utxo_id_to_check.push_back(utxo_id);
                 self.checked_utxo_id.insert(utxo_id, amount);
             }
         }
 
         pub fn next_utxo_id(&mut self) -> Option<UtxoId> {
-            self.utxo_id_to_check.pop()
+            self.utxo_id_to_check.pop_front()
         }
 
         pub fn register_tx(&mut self, tx: Arc<Transaction>) -> TxId {
@@ -311,12 +316,27 @@ mod tests {
                         }
                         println!("Found transfer output {asset_id} {amount}")
                     }
-                    fuel_tx::Receipt::MessageOut { amount, nonce, .. } => {
+                    fuel_tx::Receipt::MessageOut {
+                        amount,
+                        nonce,
+                        sender,
+                        recipient,
+                        data,
+                        ..
+                    } => {
                         if amount <= THRESHOLD {
                             continue;
                         }
+                        let message_id = Input::compute_message_id(
+                            &sender,
+                            &recipient,
+                            &nonce,
+                            amount,
+                            &data.unwrap(),
+                        );
+                        stat.message_id.push(message_id);
                         println!(
-                            "Found message out {nonce} with amount `{amount}` ~ {}",
+                            "Found message out `{message_id}` with amount `{amount}` ~ {}",
                             amount as f32 / 1e9
                         )
                     }
@@ -432,10 +452,15 @@ mod tests {
             .into_iter()
             .map(|utxo_id| {
                 let amount = stat.checked_utxo_id.get(&utxo_id).unwrap();
-                (utxo_id, *amount)
+                (utxo_id.to_string(), *amount)
             })
             .collect::<Vec<_>>();
 
-        println!("Unspent utxos: {:?}", unspent_utxos);
+        println!("Unspent utxos {}: {:?}", unspent_utxos.len(), unspent_utxos);
+        println!(
+            "Bridged messages {}: {:?}",
+            stat.message_id.len(),
+            stat.message_id
+        );
     }
 }
