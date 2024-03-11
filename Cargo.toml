@@ -18,7 +18,9 @@ fuel-core-client = "0.22.3"
 fuel-core-types = "0.22.3"
 
 [dev-dependencies]
+fuel-core-chain-config = "0.22.3"
 tokio = { version = "1.36.0", features = ["full"] }
+serde_json = "1"
 
 [build-dependencies]
 fuel-core-client = "0.22.3"
