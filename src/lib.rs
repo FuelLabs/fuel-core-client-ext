@@ -12,7 +12,6 @@ use fuel_core_client::client::{
         },
         primitives::TransactionId,
         schema,
-        tx::transparent_receipt::Receipt,
         BlockId,
         ConnectionArgs,
         HexString,
@@ -20,6 +19,7 @@ use fuel_core_client::client::{
     },
     FuelClient,
 };
+use fuel_core_client::client::schema::tx::TransactionStatus;
 use fuel_core_types::fuel_crypto::PublicKey;
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -99,7 +99,7 @@ impl From<FullBlockConnection> for PaginatedResult<FullBlock, String> {
 pub struct OpaqueTransaction {
     pub id: TransactionId,
     pub raw_payload: HexString,
-    pub receipts: Option<Vec<Receipt>>,
+    pub status: Option<TransactionStatus>,
 }
 
 #[async_trait::async_trait]
@@ -128,8 +128,8 @@ mod tests {
     use fuel_core_client::client::pagination::PageDirection;
 
     #[tokio::test]
-    async fn beta5_works() {
-        let client = FuelClient::new("https://beta-5.fuel.network")
+    async fn testnet_works() {
+        let client = FuelClient::new("https://testnet.fuel.network")
             .expect("Should connect to the beta 5 network");
 
         let request = PaginationRequest {
