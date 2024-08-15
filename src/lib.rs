@@ -12,6 +12,7 @@ use fuel_core_client::client::{
         },
         primitives::TransactionId,
         schema,
+        tx::TransactionStatus,
         BlockId,
         ConnectionArgs,
         HexString,
@@ -19,7 +20,6 @@ use fuel_core_client::client::{
     },
     FuelClient,
 };
-use fuel_core_client::client::schema::tx::TransactionStatus;
 use fuel_core_types::fuel_crypto::PublicKey;
 
 #[derive(cynic::QueryFragment, Debug)]
