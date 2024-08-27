@@ -16,9 +16,11 @@ async-trait = "0.1"
 cynic = { version = "2.2", features = ["http-reqwest"] }
 fuel-core-client = "0.32.1"
 fuel-core-types = "0.32.1"
+serde = { version = "1.0.209", features = ["derive"] }
 
 [dev-dependencies]
 tokio = { version = "1.36.0", features = ["full"] }
+csv = "1.1.0"
 
 [build-dependencies]
 fuel-core-client = "0.32.1"
