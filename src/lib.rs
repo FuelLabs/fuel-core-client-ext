@@ -10,6 +10,7 @@ use fuel_core_client::client::{
             Consensus,
             Header,
         },
+        da_compressed::DaCompressedBlock,
         primitives::TransactionId,
         schema,
         tx::TransactionStatus,
@@ -17,12 +18,10 @@ use fuel_core_client::client::{
         ConnectionArgs,
         HexString,
         PageInfo,
+        U32,
     },
     FuelClient,
 };
-use fuel_core_client::client::schema::block::Block;
-use fuel_core_client::client::schema::da_compressed::DaCompressedBlock;
-use fuel_core_client::client::schema::U32;
 use fuel_core_types::fuel_crypto::PublicKey;
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -100,14 +99,14 @@ impl From<FullBlockConnection> for PaginatedResult<FullBlock, String> {
 #[derive(cynic::QueryVariables, Debug)]
 pub struct DaCompressedBlockWithBlockIdByHeightArgs {
     height: U32,
-    block_height: Option<U32>
+    block_height: Option<U32>,
 }
 
 impl DaCompressedBlockWithBlockIdByHeightArgs {
     pub fn new(height: u32) -> Self {
         Self {
             height: height.into(),
-            block_height: Some(height.into())
+            block_height: Some(height.into()),
         }
     }
 }
@@ -122,14 +121,19 @@ pub struct DaCompressedBlockWithBlockIdByHeightQuery {
     #[arguments(height: $height)]
     pub da_compressed_block: Option<DaCompressedBlock>,
     #[arguments(height: $block_height)]
-    pub block: Option<Block>,
+    pub block: Option<OnlyBlockId>,
 }
 
 pub struct DaCompressedBlockWithBlockId {
     pub da_compressed_block: DaCompressedBlock,
-    pub block: Block,
+    pub block_id: BlockId,
 }
 
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(schema_path = "./target/schema.sdl", graphql_type = "Block")]
+pub struct OnlyBlockId {
+    pub id: BlockId,
+}
 
 #[derive(cynic::QueryFragment, Clone, Debug)]
 #[cynic(schema_path = "./target/schema.sdl", graphql_type = "Transaction")]
@@ -168,7 +172,7 @@ impl ClientExt for FuelClient {
         height: u32,
     ) -> std::io::Result<Option<DaCompressedBlockWithBlockId>> {
         let query = DaCompressedBlockWithBlockIdByHeightQuery::build(
-            DaCompressedBlockWithBlockIdByHeightArgs::new(height)
+            DaCompressedBlockWithBlockIdByHeightArgs::new(height),
         );
         let da_compressed_block = self.query(query).await?;
 
@@ -178,7 +182,7 @@ impl ClientExt for FuelClient {
         ) {
             Ok(Some(DaCompressedBlockWithBlockId {
                 da_compressed_block: da_compressed,
-                block,
+                block_id: block.id,
             }))
         } else {
             Ok(None)
