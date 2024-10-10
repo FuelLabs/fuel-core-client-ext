@@ -20,6 +20,9 @@ use fuel_core_client::client::{
     },
     FuelClient,
 };
+use fuel_core_client::client::schema::block::Block;
+use fuel_core_client::client::schema::da_compressed::DaCompressedBlock;
+use fuel_core_client::client::schema::U32;
 use fuel_core_types::fuel_crypto::PublicKey;
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -94,6 +97,40 @@ impl From<FullBlockConnection> for PaginatedResult<FullBlock, String> {
     }
 }
 
+#[derive(cynic::QueryVariables, Debug)]
+pub struct DaCompressedBlockWithBlockIdByHeightArgs {
+    height: U32,
+    block_height: Option<U32>
+}
+
+impl DaCompressedBlockWithBlockIdByHeightArgs {
+    pub fn new(height: u32) -> Self {
+        Self {
+            height: height.into(),
+            block_height: Some(height.into())
+        }
+    }
+}
+
+#[derive(cynic::QueryFragment, Debug)]
+#[cynic(
+    schema_path = "./target/schema.sdl",
+    graphql_type = "Query",
+    variables = "DaCompressedBlockWithBlockIdByHeightArgs"
+)]
+pub struct DaCompressedBlockWithBlockIdByHeightQuery {
+    #[arguments(height: $height)]
+    pub da_compressed_block: Option<DaCompressedBlock>,
+    #[arguments(height: $block_height)]
+    pub block: Option<Block>,
+}
+
+pub struct DaCompressedBlockWithBlockId {
+    pub da_compressed_block: DaCompressedBlock,
+    pub block: Block,
+}
+
+
 #[derive(cynic::QueryFragment, Clone, Debug)]
 #[cynic(schema_path = "./target/schema.sdl", graphql_type = "Transaction")]
 pub struct OpaqueTransaction {
@@ -108,6 +145,11 @@ pub trait ClientExt {
         &self,
         request: PaginationRequest<String>,
     ) -> std::io::Result<PaginatedResult<FullBlock, String>>;
+
+    async fn da_compressed_block_with_id(
+        &self,
+        height: u32,
+    ) -> std::io::Result<Option<DaCompressedBlockWithBlockId>>;
 }
 
 #[async_trait::async_trait]
@@ -119,6 +161,28 @@ impl ClientExt for FuelClient {
         let query = FullBlocksQuery::build(request.into());
         let blocks = self.query(query).await?.blocks.into();
         Ok(blocks)
+    }
+
+    async fn da_compressed_block_with_id(
+        &self,
+        height: u32,
+    ) -> std::io::Result<Option<DaCompressedBlockWithBlockId>> {
+        let query = DaCompressedBlockWithBlockIdByHeightQuery::build(
+            DaCompressedBlockWithBlockIdByHeightArgs::new(height)
+        );
+        let da_compressed_block = self.query(query).await?;
+
+        if let (Some(da_compressed), Some(block)) = (
+            da_compressed_block.da_compressed_block,
+            da_compressed_block.block,
+        ) {
+            Ok(Some(DaCompressedBlockWithBlockId {
+                da_compressed_block: da_compressed,
+                block,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -140,5 +204,15 @@ mod tests {
         let full_block = client.full_blocks(request).await;
 
         assert!(full_block.is_ok(), "{full_block:?}");
+    }
+
+    #[tokio::test]
+    async fn can_get_da_compressed_block() {
+        let client = FuelClient::new("https://testnet.fuel.network")
+            .expect("Should connect to the testnet");
+
+        let da_compressed_block = client.da_compressed_block_with_id(1).await.unwrap();
+
+        assert!(da_compressed_block.is_none());
     }
 }
